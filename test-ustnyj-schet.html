@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Устный счёт в пределах 1000</title>
+<style>
+:root{--bg:#fbf7ee;--card:#ffffff;--ink:#23303b;--mute:#6a7179;--acc:#e8702a;--acc-ink:#ffffff;--ok:#1f7a4d;--bad:#b3402a;--line:#e6dfcf;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b2229;--card:#242d36;--ink:#f1ece0;--mute:#a9b0b6;--acc:#f08a4b;--acc-ink:#1b2229;--ok:#6fd3a0;--bad:#ff9d86;--line:#37434f}}
+:root[data-theme="dark"]{--bg:#1b2229;--card:#242d36;--ink:#f1ece0;--mute:#a9b0b6;--acc:#f08a4b;--acc-ink:#1b2229;--ok:#6fd3a0;--bad:#ff9d86;--line:#37434f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS",Verdana,sans-serif;display:flex;justify-content:center;padding:20px 16px}
+main{width:100%;max-width:520px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;margin:0;font-weight:700}
+.sub{color:var(--mute);font-size:16px;margin:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px 20px;display:flex;flex-direction:column;gap:18px;align-items:center}
+.tag{font-size:14px;color:var(--mute)}
+.ex{font-size:56px;font-weight:700;letter-spacing:1px;text-align:center}
+input{width:100%;max-width:240px;font-size:36px;text-align:center;padding:10px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit}
+input:focus{outline:none;border-color:var(--acc)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+button{font-family:inherit;font-size:18px;padding:12px 20px;border-radius:14px;border:2px solid var(--acc);background:var(--acc);color:var(--acc-ink);font-weight:700;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+.msg{font-size:22px;font-weight:700;min-height:30px;text-align:center}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.hint{font-size:22px;text-align:center;color:var(--ink);min-height:30px}
+.count{font-size:14px;color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+<h1>Загадка магазина</h1>
+<p class="sub">Реши пример устно, потом введи ответ.</p>
+<section class="card">
+<div class="tag" id="tag"></div>
+<div class="ex" id="ex"></div>
+<input id="ans" type="number" inputmode="numeric" placeholder="?" aria-label="Ответ">
+<div class="msg" id="msg"></div>
+<div class="hint" id="hint"></div>
+<div class="row">
+<button id="chk">Проверить</button>
+<button id="hbtn" class="alt">Подсказка</button>
+<button id="nxt" class="alt">Другой пример</button>
+</div>
+<div class="count" id="cnt"></div>
+</section>
+</main>
+<script>
+(function(){
+var KINDS=[
+ {t:"Круглые сотни",f:function(){return gen(true,false)}},
+ {t:"Сотни, десятки и единицы",f:function(){return gen(false,true)}},
+ {t:"Как 260 + 310",f:function(){return gen(false,false)}}
+];
+function ri(a,b){return a+Math.floor(Math.random()*(b-a+1))}
+function parts(n){return [Math.floor(n/100)*100,Math.floor(n/10)%10*10,n%10]}
+function gen(round,single){
+ var add=Math.random()<0.5,a,b,pa,pb;
+ for(var i=0;i<200;i++){
+  if(round){a=ri(2,9)*100;b=ri(1,add?(9-a/100):(a/100-1))*100;if(b<100)continue}
+  else if(single){a=ri(1,9)*100+ri(1,9)*10;b=ri(1,9)*10;if(Math.random()<0.4)b=ri(1,4)*100}
+  else{a=ri(1,8)*100+ri(1,9)*10;b=ri(1,8)*100+ri(1,9)*10}
+  pa=parts(a);pb=parts(b);
+  var ok=true;
+  for(var k=0;k<3;k++){var s=add?pa[k]+pb[k]:pa[k]-pb[k];if(s<0||s>(k==0?900:90))ok=false}
+  if(a+b>1000||(!add&&a<=b))ok=false;
+  if(a%10||b%10)ok=false;
+  if(ok)return {a:a,b:b,add:add}
+ }
+ return {a:260,b:310,add:true}
+}
+function res(e){return e.add?e.a+e.b:e.a-e.b}
+function hint(e){
+ var pa=parts(e.a),pb=parts(e.b),op=e.add?" + ":" − ",out=[],rs=[];
+ for(var k=0;k<3;k++){
+  if(!pa[k]&&!pb[k])continue;
+  if(pb[k]){out.push("("+pa[k]+op+pb[k]+")");rs.push(e.add?pa[k]+pb[k]:pa[k]-pb[k])}
+  else{out.push(String(pa[k]));rs.push(pa[k])}
+ }
+ return {step:e.a+op+e.b+" = "+out.join(" + "),full:out.join(" + ")+" = "+rs.filter(function(x){return x>0}).join(" + ")+" = "+res(e)}
+}
+var cur,kind,tries=0,n=0;
+var $=function(i){return document.getElementById(i)};
+function next(){
+ kind=KINDS[ri(0,KINDS.length-1)];cur=kind.f();tries=0;n++;
+ $("tag").textContent=kind.t;
+ $("ex").textContent=cur.a+(cur.add?" + ":" − ")+cur.b;
+ $("ans").value="";$("msg").textContent="";$("msg").className="msg";$("hint").textContent="";
+ $("cnt").textContent="Пример № "+n;
+ $("ans").focus();
+}
+$("chk").onclick=function(){
+ var v=$("ans").value;if(v==="")return;
+ if(parseInt(v,10)===res(cur)){
+  $("msg").textContent="Верно! Молодец!";$("msg").className="msg ok";$("hint").textContent=hint(cur).full;
+ }else{
+  tries++;$("msg").textContent="Подумай ещё раз";$("msg").className="msg bad";
+  if(tries>=2)$("hint").textContent=hint(cur).step;
+ }
+};
+$("hbtn").onclick=function(){$("hint").textContent=hint(cur).step};
+$("nxt").onclick=next;
+$("ans").addEventListener("keydown",function(e){if(e.key==="Enter")$("chk").click()});
+next();
+})();
+</script>
+</body>
+</html>
